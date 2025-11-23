@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>How are you today?</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: #f0f8ff;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            color: #ff6347;
+            margin: 20px 0;
+        }
+        #container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 30px;
+            padding: 20px;
+        }
+        #camera-section, #pet-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        video, #pet {
+            width: 320px;
+            height: 240px;
+            border: 2px solid #333;
+            border-radius: 8px;
+        }
+        button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            border: none;
+            background-color: #ff6347;
+            color: white;
+        }
+
+        /* Thinking cloud box */
+        #thinking-box {
+            position: relative;
+            background: #fffacd;
+            border-radius: 40px;
+            padding: 30px;
+            max-width: 700px;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            font-size: 28px;
+            margin: 40px auto 20px auto;
+            text-align: center;
+        }
+
+        /* Three yellow dots above the box towards pet image */
+        #thinking-box::before,
+        #thinking-box::after,
+        #thinking-box .dot-middle {
+            content: "";
+            position: absolute;
+            background: #ffeb3b;
+            border-radius: 50%;
+        }
+
+        #thinking-box::before {
+            width: 15px; height: 15px;
+            top: -40px;
+            left: 65%;
+        }
+
+        #thinking-box .dot-middle {
+            width: 15px; height: 15px;
+            top: -55px;
+            left: 68%;
+        }
+
+        #thinking-box::after {
+            width: 15px; height: 15px;
+            top: -70px;
+            left: 71%;
+        }
+    </style>
+</head>
+<body>
+
+<h1>How are you today?</h1>
+
+<div id="container">
+    <!-- Camera Section -->
+    <div id="camera-section">
+        <video id="video" autoplay></video>
+        <div>
+            <button onclick="startCamera()">Open Camera</button>
+            <button onclick="stopCamera()">Close Camera</button>
+        </div>
+    </div>
+
+    <!-- Pet Section -->
+    <div id="pet-section">
+        <img id="pet" src="/static/pet_images/neutral_pet.png" alt="Pet Emotion">
+        <p id="pet-text">Hello! I'm feeling neutral.</p>
+    </div>
+</div>
+
+<!-- Thinking cloud box -->
+<div id="thinking-box">
+    Please open the camera so I can see your mood and talk to you!
+    <span class="dot-middle"></span>
+</div>
+
+<script>
+let stream;
+let video = document.getElementById("video");
+let thinkingBox = document.getElementById("thinking-box");
+
+// Map user emotion to pet image
+const emotionMap = {
+    angry: "angry_pet.png",
+    bored: "bored_pet.png",
+    cry: "cry_pet.png",
+    happy: "happy_pet.png",
+    veryhappy: "veryhappy_pet.png",
+    hungry: "hungry_pet.png",
+    neutral: "neutral_pet.png",
+    sad: "sad_pet.png",
+    surprised: "surprised_pet.png"
+};
+
+// Map emotion to text
+const emotionText = {
+    angry: "Uh-oh! Looks like you're angry!",
+    bored: "Feeling bored? Me too...",
+    cry: "Feeling sad? Here's a hug!",
+    happy: "Yay! You're happy!",
+    veryhappy: "Super happy! Awesome!",
+    hungry: "Hungry? Let's eat!",
+    neutral: "Just chilling like me.",
+    sad: "Don't be sad! Cheer up!",
+    surprised: "Whoa! That surprised you!"
+};
+
+// Start camera
+function startCamera() {
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(s => {
+            stream = s;
+            video.srcObject = stream;
+            thinkingBox.style.display = "none"; // hide cloud box when camera is on
+            updateEmotion(); // start real-time updates
+        })
+        .catch(err => console.error("Error accessing camera:", err));
+}
+
+// Stop camera
+function stopCamera() {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+        thinkingBox.style.display = "block"; // show cloud box when camera off
+        // Reset pet to neutral
+        document.getElementById("pet").src = "/static/pet_images/neutral_pet.png";
+        document.getElementById("pet-text").innerText = "Hello! I'm feeling neutral.";
+    }
+}
+
+// Capture and send video frames continuously
+async function updateEmotion() {
+    if (!stream) return;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth || 320;
+    canvas.height = video.videoHeight || 240;
+    const context = canvas.getContext("2d");
+
+    // Draw current video frame
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+
+    // Send to backend
+    const formData = {
+        image_base64: await blobToBase64(blob)
+    };
+
+    try {
+        const response = await fetch("http://127.0.0.1:8001/analyze-emotion/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(formData)
+        });
+        const data = await response.json();
+        const emo = data.emotion.toLowerCase();
+        const petFile = emotionMap[emo] || "neutral_pet.png";
+
+        document.getElementById("pet").src = "/static/pet_images/" + petFile;
+        document.getElementById("pet-text").innerText = emotionText[emo] || "Hello!";
+    } catch (err) {
+        console.error("Error analyzing emotion:", err);
+    }
+
+    requestAnimationFrame(updateEmotion); // loop continuously
+}
+
+// Helper: blob -> base64
+function blobToBase64(blob) {
+    return new Promise((resolve, _) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(blob);
+    });
+}
+</script>
+
+</body>
+</html>
