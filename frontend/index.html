@@ -102,7 +102,7 @@
 
     <!-- Pet Section -->
     <div id="pet-section">
-        <img id="pet" src="/static/pet_images/neutral_pet.png" alt="Pet Emotion">
+        <img id="pet" src="https://emotion-detector-scwh.onrender.com/static/pet_images/neutral_pet.png" alt="Pet Emotion">
         <p id="pet-text">Hello! I'm feeling neutral.</p>
     </div>
 </div>
@@ -163,7 +163,7 @@ function stopCamera() {
         stream = null;
         thinkingBox.style.display = "block"; // show cloud box when camera off
         // Reset pet to neutral
-        document.getElementById("pet").src = "/static/pet_images/neutral_pet.png";
+        document.getElementById("pet").src = "https://emotion-detector-scwh.onrender.com/static/pet_images/neutral_pet.png";
         document.getElementById("pet-text").innerText = "Hello! I'm feeling neutral.";
     }
 }
@@ -196,7 +196,7 @@ async function updateEmotion() {
         const emo = data.emotion.toLowerCase();
         const petFile = emotionMap[emo] || "neutral_pet.png";
 
-        document.getElementById("pet").src = "/static/pet_images/" + petFile;
+        document.getElementById("pet").src = "https://emotion-detector-scwh.onrender.com/static/pet_images/" + petFile;
         document.getElementById("pet-text").innerText = emotionText[emo] || "Hello!";
     } catch (err) {
         console.error("Error analyzing emotion:", err);
