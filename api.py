@@ -29,10 +29,6 @@ app.add_middleware(
 # Mount static files for images/JS/CSS
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
-@app.get("/")
-def root():
-    return {"status": "ok", "message": "Emotion detector backend running"}
-
 # Serve index.html
 @app.get("/")
 async def serve_index():
