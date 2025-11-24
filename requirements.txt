@@ -13,7 +13,7 @@ mtcnn==1.0.0
 # -------- TensorFlow Backend --------
 tensorflow==2.20.0
 #tensorflow-estimator==2.20.0
-tensorflow-io-gcs-filesystem==0.37.1
+#tensorflow-io-gcs-filesystem==0.37.1
 ml-dtypes==0.2.0
 numpy==1.23.5
 h5py==3.15.1
